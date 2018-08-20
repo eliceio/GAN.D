@@ -18,6 +18,9 @@ class Decoder:
         pass
 
     def network(self):
+        # Encoder
+        # Decoder
+        
         pass
 
 
