@@ -18,7 +18,7 @@ class Decoder:
         pass
 
 
-class DanceNet:
+class RNN_Model:
     def __init__(self):
         pass
 
