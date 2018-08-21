@@ -52,10 +52,14 @@ class AE_Model:
 
 class RNN_Model:
     def __init__(self):
-        self.input = tf.placeholder(tf.float32, shape=(None, 128))
+        # input
+        self.batch = 4
+        self.input = tf.placeholder(tf.float32, shape=(self.batch, 128))
+        self.y_true = tf.placeholder(tf.float32, shape=(self.batch, 128))
+
         # make network
         self.network = tf.make_template('net', self._network)
-        self.pred = self._network()
+        self.y_pred = self._network()
 
     def _network(self):
         numComponents = 24
@@ -64,13 +68,32 @@ class RNN_Model:
         X = LSTM(input, 512, dropout=True, keep_prob=0.4, scope="LSTM_1")
         X = LSTM(X, 512, dropout=True, keep_prob=0.4, scope="LSTM_2")
         X = LSTM(X, 512, dropout=True, keep_prob=0.4, scope="LSTM_3")
+        X = tf.reshape(X, [self.batch, -1])
         X = Dense(X, num_unit=1000, activation=tf.nn.relu)
         outputs = MDN(X, outputDim, numComponents).logit
 
         return outputs
 
     def loss(self):
+        num_mixes = 24
+        output_dim = 128
+        out_mu, out_sigma, out_pi = tf.split(self.y_pred, num_or_size_splits=[num_mixes * output_dim,
+                                                                              num_mixes * output_dim,
+                                                                              num_mixes],
+                                             axis=1, name='mdn_coef_split')
+        cat = Categorical(logits=out_pi)
+        component_splits = [output_dim] * num_mixes
+        mus = tf.split(out_mu, num_or_size_splits=component_splits, axis=1)
+        sigs = tf.split(out_sigma, num_or_size_splits=component_splits, axis=1)
+        coll = [MultivariateNormalDiag(loc=loc, scale_diag=scale) for loc, scale
+                in zip(mus, sigs)]
+        mixture = Mixture(cat=cat, components=coll)
+        loss = mixture.log_prob(self.y_true)
+        loss = tf.negative(loss)
+        loss = tf.reduce_mean(loss)
+        return loss
 
+    def sample_from_output(self):
         pass
 
 
@@ -97,7 +120,7 @@ class MDN:
             mdn_out = tf.concat([self.mdn_mus,
                                  self.mdn_sigmas,
                                  self.mdn_pi],
-                                axis=-1,
+                                axis=1,
                                 name='mdn_outputs')
 
             return mdn_out
