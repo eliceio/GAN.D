@@ -8,20 +8,18 @@ class AE_Model:
     def __init__(self, latent_dim, batch_size):
         self.latent_dim = latent_dim
         self.batch_size = batch_size
-        self.input_shape = [256, 256, 1] #w * h * c
+        self.input_shape = [256, 256, 1]  # w * h * c
         self.latent_shape = 128
-    
 
-    def sampling(z_mean,z_log_var):
-        z_mean= z_mean
+    def sampling(self, z_mean, z_log_var):
+        z_mean = z_mean
         z_log_var = z_log_var
         batch = self.batch_size
-        dim = self.latent_shapeßS
-        epsilon = tf.random_normal(shape=(batch,dim))
+        dim = self.latent_shape
+        epsilon = tf.random_normal(shape=(batch, dim))
         return z_mean + tf.exp(0.5 * z_log_var) * epsilon
 
-
-    def network(self,x) :
+    def network(self, x):
         x = tf.nn.relu(tf.layers.conv2d(x, 128, kernel_size=3, padding='same'))
         x = tf.layers.max_pooling2d(x, pool_size=2)
         x = tf.nn.relu(tf.layers.conv2d(x, 64, kernel_size=3, padding='same'))
@@ -34,10 +32,11 @@ class AE_Model:
         x = tf.layers.dense(x, 128)
 
         z_mean = tf.layers.dense(x, self.latent_shape)
-        z = sampling(z_mean, z_log_var)
+        z = self.sampling(z_mean, z_mean)
 
         latent_inputs = z
-        x = tf.layers.dense(latent_inputs, shape[1] * shape[2] * shape[3], activation='relu', kernel_initializer='glorot_uniform')
+        x = tf.layers.dense(latent_inputs, shape[1] * shape[2] * shape[3], activation='relu',
+                            kernel_initializer='glorot_uniform')
         x = tf.reshape(x, [shape[1], shape[2], shape[3]])
         x = tf.layers.dense(x, 128, kernel_initializer='glorot_uniform')
 
@@ -61,7 +60,7 @@ class RNN_Model:
         X = LSTM(X, 512)
         X = Dropout(X, 0.40)
         X = Dense(X, num_unit=1000, activation=tf.nn.relu)
-        outputs = X # todo mdn 추가 할 것
+        outputs = X  # todo mdn 추가 할 것
 
         self.pred = outputs
 
