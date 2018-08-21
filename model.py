@@ -10,6 +10,11 @@ class AE_Model:
         self.batch_size = batch_size
         self.input_shape = [256, 256, 1]  # w * h * c
         self.latent_shape = 128
+        self.input = tf.placeholder(tf.float32, shape=(self.batch_size, 256, 256, 1))
+
+        # make network
+        self.network = tf.make_template('net', self._network)
+        self.y_pred = self._network(self.input)
 
     def sampling(self, z_mean, z_log_var):
         z_mean = z_mean
@@ -19,13 +24,13 @@ class AE_Model:
         epsilon = tf.random_normal(shape=(batch, dim))
         return z_mean + tf.exp(0.5 * z_log_var) * epsilon
 
-    def network(self, x):
+    def _network(self, x):
         x = tf.nn.relu(tf.layers.conv2d(x, 128, kernel_size=3, padding='same'))
-        x = tf.layers.max_pooling2d(x, pool_size=2)
+        x = tf.layers.max_pooling2d(x, pool_size=2, strides=2)
         x = tf.nn.relu(tf.layers.conv2d(x, 64, kernel_size=3, padding='same'))
-        x = tf.layers.max_pooling2d(x, pool_size=2)
+        x = tf.layers.max_pooling2d(x, pool_size=2, strides=2)
         x = tf.nn.relu(tf.layers.conv2d(x, 32, kernel_size=3, padding='same'))
-        x = tf.layers.max_pooling2d(x, pool_size=2)
+        x = tf.layers.max_pooling2d(x, pool_size=2, strides=2)
 
         shape = tf.shape(x)
         x = tf.layers.flatten(x)
@@ -36,24 +41,26 @@ class AE_Model:
 
         latent_inputs = z
         x = tf.nn.relu(tf.layers.dense(latent_inputs, shape[1] * shape[2] * shape[3],
-                            kernel_initializer='glorot_uniform'))
+                                       kernel_initializer=tf.glorot_normal_initializer))
         x = tf.reshape(x, [shape[1], shape[2], shape[3]])
-        x = tf.layers.dense(x, 128, kernel_initializer='glorot_uniform')
-   
+        x = tf.layers.dense(x, 128, kernel_initializer=tf.glorot_normal_initializer)
+
         x = tf.nn.relu(tf.layers.conv2d(x, filters=32, kernel_size=3, padding='same'))
-        x = tf.image.resize_images(x, size=[2*shape[1], 2*shape[2]])
+        x = tf.image.resize_images(x, size=[2 * shape[1], 2 * shape[2]])
         x = tf.nn.relu(tf.layers.conv2d(x, filters=64, kernel_size=3, padding='same'))
-        x = tf.image.resize_images(x, size=[2*shape[1], 2*shape[2]])
+        x = tf.image.resize_images(x, size=[2 * shape[1], 2 * shape[2]])
         x = tf.nn.relu(tf.layers.conv2d(x, filters=128, kernel_size=3, padding='same'))
-        x = tf.image.resize_images(x, size=[2*shape[1], 2*shape[2]])
+        x = tf.image.resize_images(x, size=[2 * shape[1], 2 * shape[2]])
         x = tf.nn.sigmoid(tf.layers.conv2d(x, filters=1, kernel_size=3, padding='same'))
-        return z
+        return x
 
 
 class RNN_Model:
     def __init__(self):
-        # input
+        # model parameter
         self.batch = 4
+
+        # model input
         self.input = tf.placeholder(tf.float32, shape=(self.batch, 128))
         self.y_true = tf.placeholder(tf.float32, shape=(self.batch, 128))
 

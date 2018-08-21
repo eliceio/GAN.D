@@ -1,12 +1,14 @@
-from model import RNN_Model
+from model import AE_Model
 import tensorflow as tf
 import numpy as np
 
 print("Start")
 
-model = RNN_Model()
+model = AE_Model(128, 4)
 train_loss = model.loss()
 
-test_input = tf.zeros_like(np.zeros([4, 256, 256, 1]))
+with tf.Session() as sess:
+    sess.run(tf.global_variables_initializer())
+
 
 print("Done")
