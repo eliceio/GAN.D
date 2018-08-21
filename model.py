@@ -74,3 +74,83 @@ class MDN:
 
     def network(self):
         pass
+
+# Todo 테스트용 모델
+class TestModel:
+    def __init__(self, batch_size):
+        # model parameter
+        self.batch_size = batch_size
+        self.pred_size = 3
+
+        # model input
+        self.start_frames = tf.placeholder(tf.float32, shape=(batch_size, 256, 256, 1))
+        self.end_frames = tf.placeholder(tf.float32, shape=(batch_size, 256, 256, 1))
+        self.target_frames = tf.placeholder(tf.float32, shape=(batch_size, self.pred_size, 256, 256, 1))
+
+        # make network
+        self.network = tf.make_template('net', self._network)
+        self.logit = self.network()
+
+    def _Encoder(self, inputs, reuse=False):
+        with tf.variable_scope('Encoder', reuse=reuse):  # inputs <- (batch, 256, 256, c)
+            enc = tf.nn.relu(tf.layers.conv2d(inputs, 128, kernel_size=3, padding='same'))  # (batch, 25, 256, 128)
+            enc = tf.layers.max_pooling2d(enc, pool_size=2, strides=2)  # (batch, 128, 128, 128)
+            enc = tf.nn.relu(tf.layers.conv2d(enc, 64, kernel_size=3, padding='same'))  # (batch, 128, 128, 64)
+            enc = tf.layers.max_pooling2d(enc, pool_size=2, strides=2)  # (batch, 64, 64, 64)
+            enc = tf.nn.relu(tf.layers.conv2d(enc, 32, kernel_size=3, padding='same'))  # (batch, 64, 64, 32)
+            enc = tf.layers.max_pooling2d(enc, pool_size=2, strides=2)  # (batch, 32, 32, 32)
+            enc = tf.layers.flatten(enc)
+            enc = tf.layers.dense(enc, 128)  # (batch, 128)
+
+            return enc
+
+    def _Decoder(self, inputs, reuse=False):
+        pass
+
+    def _RNN_Predict(self, start_frame_vec, end_frame_vec):
+        with tf.variable_scope('RNN_Predict'):
+            # make RNN init input - start_frame + ..(mean_vector).. + end_frame
+            expand_start = tf.expand_dims(start_frame_vec, 1)
+            expand_end = tf.expand_dims(end_frame_vec, 1)
+            seq_vector = []
+            seq_vector.append(expand_start)
+            for i in range(self.pred_size):
+                seq_vector.append(expand_start + expand_end / 2)
+            seq_vector.append(expand_end)
+
+            # RNN input
+            seq_input = tf.concat(seq_vector, axis=1)  # (batch, pred_size + 2, 128)
+
+            # Bi-LSTM
+            lstm_fw_cell = tf.contrib.rnn.BasicLSTMCell(256, forget_bias=1.0)
+            lstm_bw_cell = tf.contrib.rnn.BasicLSTMCell(256, forget_bias=1.0)
+            (output_fw, output_bw), states = tf.nn.bidirectional_dynamic_rnn(lstm_fw_cell, lstm_bw_cell, seq_input,
+                                                                             dtype=tf.float32)  # (batch, pred_size + 2, 256) x2
+            outputs = tf.concat([output_fw, output_bw], axis=2)  # (batch, pred_size + 2, 512)
+            outputs = tf.layers.dense(outputs, 128)  # (batch, pred_size + 2, 512)
+
+            # Drop predicted start, end frame
+            pred_ouput = outputs[:, 1:-1, :]
+
+            # append residual connect, start, end frame
+
+            print("End")
+
+    def _Generator(self):
+        start_frame_vector = self._Encoder(self.start_frames, reuse=False)
+        end_frame_vector = self._Encoder(self.end_frames, reuse=True)
+
+        pred_seq_vec = self._RNN_Predict(start_frame_vector, end_frame_vector)
+
+    def _Discriminator(self):
+        pass
+
+    def _network(self):
+        G = self._Generator()
+        D = self._Discriminator()
+
+    def __call__(self, *args, **kwargs):
+        pass
+
+    def loss(self):
+        pass
