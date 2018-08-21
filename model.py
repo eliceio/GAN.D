@@ -94,11 +94,13 @@ class TestModel:
 
     def _Encoder(self, inputs, reuse=False):
         with tf.variable_scope('Encoder', reuse=reuse):  # inputs <- (batch, 256, 256, c)
-            enc = tf.nn.relu(tf.layers.conv2d(inputs, 128, kernel_size=3, padding='same'))  # (batch, 25, 256, 128)
+            enc = tf.layers.conv2d(inputs, 128, kernel_size=3, activation=tf.nn.relu,
+                                   padding='same')  # (batch, 25, 256, 128)
             enc = tf.layers.max_pooling2d(enc, pool_size=2, strides=2)  # (batch, 128, 128, 128)
-            enc = tf.nn.relu(tf.layers.conv2d(enc, 64, kernel_size=3, padding='same'))  # (batch, 128, 128, 64)
+            enc = tf.layers.conv2d(enc, 64, kernel_size=3, activation=tf.nn.relu,
+                                   padding='same')  # (batch, 128, 128, 64)
             enc = tf.layers.max_pooling2d(enc, pool_size=2, strides=2)  # (batch, 64, 64, 64)
-            enc = tf.nn.relu(tf.layers.conv2d(enc, 32, kernel_size=3, padding='same'))  # (batch, 64, 64, 32)
+            enc = tf.layers.conv2d(enc, 32, kernel_size=3, activation=tf.nn.relu, padding='same')  # (batch, 64, 64, 32)
             enc = tf.layers.max_pooling2d(enc, pool_size=2, strides=2)  # (batch, 32, 32, 32)
             enc = tf.layers.flatten(enc)
             enc = tf.layers.dense(enc, 128)  # (batch, 128)
@@ -106,7 +108,19 @@ class TestModel:
             return enc
 
     def _Decoder(self, inputs, reuse=False):
-        pass
+        with tf.variable_scope('Decoder', reuse=reuse):  # inputs <- (batch, 128)
+            dec = tf.layers.dense(inputs, 32 * 32 * 32, activation=tf.nn.relu)  # (batch, 32768)
+            dec = tf.reshape(dec, [-1, 32, 32, 32])  # (batch, 32, 32, 32)
+            dec = tf.layers.conv2d_transpose(dec, 32, 3, strides=2, activation=tf.nn.relu,
+                                             padding='same')  # (batch, 64, 64, 32)
+            dec = tf.layers.conv2d_transpose(dec, 64, 3, strides=2, activation=tf.nn.relu,
+                                             padding='same')  # (batch, 128, 128, 64)
+            dec = tf.layers.conv2d_transpose(dec, 128, 3, strides=2, activation=tf.nn.relu,
+                                             padding='same')  # (batch, 256, 256, 128)
+            dec = tf.layers.conv2d(dec, filters=1, kernel_size=3, activation=tf.nn.sigmoid,
+                                   padding='same')  # (batch, 256, 256, 1)
+
+            return dec
 
     def _RNN_Predict(self, start_frame_vec, end_frame_vec):
         with tf.variable_scope('RNN_Predict'):
@@ -158,24 +172,28 @@ class TestModel:
             return pred_seq_vec
 
     def _Generator(self):
-        # encoding input image
-        start_frame_vector = self._Encoder(self.start_frames, reuse=False)
-        end_frame_vector = self._Encoder(self.end_frames, reuse=True)
+        with tf.variable_scope('Generator'):
+            # encoding input image
+            start_frame_vector = self._Encoder(self.start_frames, reuse=False)
+            end_frame_vector = self._Encoder(self.end_frames, reuse=True)
 
-        # pred_seq_vec
-        pred_seq_vec = self._RNN_Predict(start_frame_vector, end_frame_vector)
+            # pred_seq_vec
+            pred_seq_vec = self._RNN_Predict(start_frame_vector, end_frame_vector)
 
-        # decoding seq_vec to image
-        pred_shots = [self._Decoder(input_tensor, reuse=None if i == 0 else True) for i, input_tensor in
-                      enumerate(pred_seq_vec)]
+            # decoding seq_vec to image
+            pred_shots = []
+            for i in range(self.pred_size):
+                pred_shots.append(self._Decoder(pred_seq_vec[:, i:i + 1, :], reuse=None if i == 0 else True))
+
+            return pred_shots
 
     def _Discriminator(self):
         pass
 
     def _network(self):
-        G = self._Generator()
+        G_out = self._Generator()
         D_real = self._Discriminator()
-        D_fake = self._Discriminator()
+        D_fake = self._Discriminator(G_out)
 
     def __call__(self, *args, **kwargs):
         pass
