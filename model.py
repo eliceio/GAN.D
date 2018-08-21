@@ -93,8 +93,39 @@ class RNN_Model:
         loss = tf.reduce_mean(loss)
         return loss
 
-    def sample_from_output(self):
-        pass
+    def sample_from_output(self, params, output_dim, num_mixes, temp=1.0):
+        """Sample from an MDN output with temperature adjustment."""
+
+        # inner methods
+        def softmax(w, t=1.0):
+            """Softmax function for a list or numpy array of logits. Also adjusts temperature."""
+            e = np.array(w) / t  # adjust temperature
+            e -= e.max()  # subtract max to protect from exploding exp values.
+            e = np.exp(e)
+            dist = e / np.sum(e)
+            return dist
+
+        def sample_from_categorical(dist):
+            """Samples from a categorical model PDF."""
+            r = np.random.rand(1)  # uniform random number in [0,1]
+            accumulate = 0
+            for i in range(0, dist.size):
+                accumulate += dist[i]
+                if accumulate >= r:
+                    return i
+            tf.logging.info('Error sampling mixture model.')
+            return -1
+
+        # make output
+        mus = params[:num_mixes * output_dim]
+        sigs = params[num_mixes * output_dim:2 * num_mixes * output_dim]
+        pis = softmax(params[-num_mixes:], t=temp)
+        m = sample_from_categorical(pis)
+        mus_vector = mus[m * output_dim:(m + 1) * output_dim]
+        sig_vector = sigs[m * output_dim:(m + 1) * output_dim] * temp  # adjust for temperature
+        cov_matrix = np.identity(output_dim) * sig_vector
+        sample = np.random.multivariate_normal(mus_vector, cov_matrix, 1)
+        return sample
 
 
 class MDN:
