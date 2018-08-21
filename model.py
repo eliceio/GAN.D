@@ -75,6 +75,7 @@ class MDN:
     def network(self):
         pass
 
+
 # Todo 테스트용 모델
 class TestModel:
     def __init__(self, batch_size):
@@ -122,32 +123,59 @@ class TestModel:
             seq_input = tf.concat(seq_vector, axis=1)  # (batch, pred_size + 2, 128)
 
             # Bi-LSTM
-            lstm_fw_cell = tf.contrib.rnn.BasicLSTMCell(256, forget_bias=1.0)
-            lstm_bw_cell = tf.contrib.rnn.BasicLSTMCell(256, forget_bias=1.0)
-            (output_fw, output_bw), states = tf.nn.bidirectional_dynamic_rnn(lstm_fw_cell, lstm_bw_cell, seq_input,
-                                                                             dtype=tf.float32)  # (batch, pred_size + 2, 256) x2
-            outputs = tf.concat([output_fw, output_bw], axis=2)  # (batch, pred_size + 2, 512)
-            outputs = tf.layers.dense(outputs, 128)  # (batch, pred_size + 2, 512)
+            with tf.variable_scope('Bi_LSTM_1'):
+                lstm_fw_cell = tf.contrib.rnn.BasicLSTMCell(256, forget_bias=1.0)
+                lstm_bw_cell = tf.contrib.rnn.BasicLSTMCell(256, forget_bias=1.0)
+                (output_fw, output_bw), states = tf.nn.bidirectional_dynamic_rnn(lstm_fw_cell, lstm_bw_cell, seq_input,
+                                                                                 dtype=tf.float32)  # (batch, pred_size + 2, 256) x2
+                outputs = tf.concat([output_fw, output_bw], axis=2)  # (batch, pred_size + 2, 512)
+                outputs = tf.layers.dense(outputs, 128, activation=tf.nn.tanh)  # (batch, pred_size + 2, 128)
 
             # Drop predicted start, end frame
-            pred_ouput = outputs[:, 1:-1, :]
+            pred_ouput = outputs[:, 1:-1, :]  # (batch, pred_size, 128)
 
             # append residual connect, start, end frame
+            residual_input = tf.concat([expand_start, pred_ouput], axis=1)
+            residual_input = tf.concat([residual_input, expand_end], axis=1)  # (batch, pred_size +2, 128)
 
-            print("End")
+            # Bi-LSTM
+            with tf.variable_scope('Bi_LSTM_2'):
+                lstm_fw_cell_2 = tf.contrib.rnn.BasicLSTMCell(256, forget_bias=1.0)
+                lstm_bw_cell_2 = tf.contrib.rnn.BasicLSTMCell(256, forget_bias=1.0)
+                (output_fw_2, output_bw_2), states_2 = tf.nn.bidirectional_dynamic_rnn(lstm_fw_cell_2, lstm_bw_cell_2,
+                                                                                       residual_input,
+                                                                                       dtype=tf.float32)  # (batch, pred_size + 2, 256) x2
+                outputs_2 = tf.concat([output_fw_2, output_bw_2], axis=2)  # (batch, pred_size + 2, 512)
+                outputs_2 = tf.layers.dense(outputs_2, 128, activation=tf.nn.tanh)  # (batch, pred_size + 2, 128)
+
+            # Drop predicted start, end frame
+            pred_ouput_2 = outputs_2[:, 1:-1, :]  # (batch, pred_size, 128)
+
+            # append original start, end frame
+            pred_seq_vec = tf.concat([expand_start, pred_ouput_2], axis=1)
+            pred_seq_vec = tf.concat([pred_seq_vec, expand_end], axis=1)  # (batch, pred_size +2, 128)
+
+            return pred_seq_vec
 
     def _Generator(self):
+        # encoding input image
         start_frame_vector = self._Encoder(self.start_frames, reuse=False)
         end_frame_vector = self._Encoder(self.end_frames, reuse=True)
 
+        # pred_seq_vec
         pred_seq_vec = self._RNN_Predict(start_frame_vector, end_frame_vector)
+
+        # decoding seq_vec to image
+        pred_shots = [self._Decoder(input_tensor, reuse=None if i == 0 else True) for i, input_tensor in
+                      enumerate(pred_seq_vec)]
 
     def _Discriminator(self):
         pass
 
     def _network(self):
         G = self._Generator()
-        D = self._Discriminator()
+        D_real = self._Discriminator()
+        D_fake = self._Discriminator()
 
     def __call__(self, *args, **kwargs):
         pass
