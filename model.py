@@ -25,34 +25,51 @@ class AE_Model:
         return z_mean + tf.exp(0.5 * z_log_var) * epsilon
 
     def _network(self, x):
-        x = tf.nn.relu(tf.layers.conv2d(x, 128, kernel_size=3, padding='same'))
-        x = tf.layers.max_pooling2d(x, pool_size=2, strides=2)
-        x = tf.nn.relu(tf.layers.conv2d(x, 64, kernel_size=3, padding='same'))
-        x = tf.layers.max_pooling2d(x, pool_size=2, strides=2)
-        x = tf.nn.relu(tf.layers.conv2d(x, 32, kernel_size=3, padding='same'))
-        x = tf.layers.max_pooling2d(x, pool_size=2, strides=2)
+        with tf.variable_scope('Encoder'):
+            enc = tf.layers.conv2d(x, 128, kernel_size=3, activation=tf.nn.relu,
+                                   padding='same')  # (batch, 25, 256, 128)
+            enc = tf.layers.max_pooling2d(enc, pool_size=2, strides=2)  # (batch, 128, 128, 128)
+            enc = tf.layers.conv2d(enc, 64, kernel_size=3, activation=tf.nn.relu,
+                                   padding='same')  # (batch, 128, 128, 64)
+            enc = tf.layers.max_pooling2d(enc, pool_size=2, strides=2)  # (batch, 64, 64, 64)
+            enc = tf.layers.conv2d(enc, 32, kernel_size=3, activation=tf.nn.relu, padding='same')  # (batch, 64, 64, 32)
+            enc = tf.layers.max_pooling2d(enc, pool_size=2, strides=2)  # (batch, 32, 32, 32)
 
-        shape = tf.shape(x)
-        x = tf.layers.flatten(x)
-        x = tf.layers.dense(x, 128)
+            shape = enc.get_shape()
+            enc = tf.layers.flatten(enc)
+            enc = tf.layers.dense(enc, 128)
 
-        z_mean = tf.layers.dense(x, self.latent_shape)
-        z = self.sampling(z_mean, z_mean)
+        self.z_mean = tf.layers.dense(enc, self.latent_shape)
+        self.z_log_var = tf.layers.dense(enc, self.latent_shape)
+
+        z = self.sampling(self.z_mean, self.z_log_var)
 
         latent_inputs = z
-        x = tf.nn.relu(tf.layers.dense(latent_inputs, shape[1] * shape[2] * shape[3],
-                                       kernel_initializer=tf.glorot_normal_initializer))
-        x = tf.reshape(x, [shape[1], shape[2], shape[3]])
-        x = tf.layers.dense(x, 128, kernel_initializer=tf.glorot_normal_initializer)
+        with tf.variable_scope('Decoder'):
+            dec = tf.layers.dense(latent_inputs, shape[1] * shape[2] * shape[3], activation=tf.nn.relu)
+            dec = tf.reshape(dec, [shape[0], shape[1], shape[2], shape[3]])
+            dec = tf.layers.dense(dec, 128, activation=tf.nn.relu)  # (batch, 32,32,128)
+            dec = tf.layers.conv2d_transpose(dec, 32, 3, strides=2, activation=tf.nn.relu,
+                                             padding='same')  # (batch, 64, 64, 32)
+            dec = tf.layers.conv2d_transpose(dec, 64, 3, strides=2, activation=tf.nn.relu,
+                                             padding='same')  # (batch, 128, 128, 64)
+            dec = tf.layers.conv2d_transpose(dec, 128, 3, strides=2, activation=tf.nn.relu,
+                                             padding='same')  # (batch, 256, 256, 128)
+            dec = tf.layers.conv2d(dec, filters=1, kernel_size=3, activation=tf.nn.sigmoid,
+                                   padding='same')  # (batch, 256, 256, 1)
+        return dec
 
-        x = tf.nn.relu(tf.layers.conv2d(x, filters=32, kernel_size=3, padding='same'))
-        x = tf.image.resize_images(x, size=[2 * shape[1], 2 * shape[2]])
-        x = tf.nn.relu(tf.layers.conv2d(x, filters=64, kernel_size=3, padding='same'))
-        x = tf.image.resize_images(x, size=[2 * shape[1], 2 * shape[2]])
-        x = tf.nn.relu(tf.layers.conv2d(x, filters=128, kernel_size=3, padding='same'))
-        x = tf.image.resize_images(x, size=[2 * shape[1], 2 * shape[2]])
-        x = tf.nn.sigmoid(tf.layers.conv2d(x, filters=1, kernel_size=3, padding='same'))
-        return x
+    def loss(self):
+        reconstruction_loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.layers.flatten(self.input),
+                                                                      logits=tf.layers.flatten(self.y_pred))
+        reconstruction_loss *= 120 * 208
+
+        kl_loss = 1 + self.z_log_var - tf.square(self.z_mean) - tf.exp(self.z_log_var)
+        kl_loss = tf.reduce_sum(kl_loss, axis=-1)
+        kl_loss *= -0.5
+        vae_loss = tf.reduce_mean(reconstruction_loss + kl_loss)
+
+        return vae_loss
 
 
 class RNN_Model:
