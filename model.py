@@ -10,11 +10,11 @@ class AE_Model:
         self.batch_size = batch_size
         self.input_shape = [256, 256, 1]  # w * h * c
         self.latent_shape = 128
-        self.input = tf.placeholder(tf.float32, shape=(self.batch_size, 256, 256, 1))
+        self.input_image = tf.placeholder(tf.float32, shape=(self.batch_size, 256, 256, 1))
 
         # make network
         self.network = tf.make_template('net', self._network)
-        self.y_pred = self._network(self.input)
+        self.y_pred = self._network(self.input_image)
 
     def sampling(self, z_mean, z_log_var):
         z_mean = z_mean
@@ -63,11 +63,10 @@ class AE_Model:
         reconstruction_loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.layers.flatten(self.input),
                                                                       logits=tf.layers.flatten(self.y_pred))
         reconstruction_loss *= 120 * 208
-
         kl_loss = 1 + self.z_log_var - tf.square(self.z_mean) - tf.exp(self.z_log_var)
         kl_loss = tf.reduce_sum(kl_loss, axis=-1)
         kl_loss *= -0.5
-        vae_loss = tf.reduce_mean(reconstruction_loss + kl_loss)
+        vae_loss = tf.reduce_mean(reconstruction_loss) + tf.reduce_mean(kl_loss)
 
         return vae_loss
 
