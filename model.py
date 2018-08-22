@@ -60,7 +60,7 @@ class AE_Model:
         return dec
 
     def loss(self):
-        reconstruction_loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.layers.flatten(self.input),
+        reconstruction_loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.layers.flatten(self.input_image),
                                                                       logits=tf.layers.flatten(self.y_pred))
         reconstruction_loss *= 120 * 208
         kl_loss = 1 + self.z_log_var - tf.square(self.z_mean) - tf.exp(self.z_log_var)
