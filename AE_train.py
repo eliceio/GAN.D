@@ -39,17 +39,17 @@ def main():
     with tf.Session(config=session_conf) as sess:
         sess.run(tf.global_variables_initializer())
         sess.run(iterator.initializer)
+        model.load(sess, logdir=logdir)
         writer = tf.summary.FileWriter(logdir, sess.graph)
 
         for i in range(num_step):
             image = sess.run(input_image_stacked)
-            _, summ = sess.run([train_op, summ_op], feed_dict={model.input_image: image})
-            print("step : " + str(i))
+            _, loss, summ = sess.run([train_op, train_loss, summ_op], feed_dict={model.input_image: image})
+            print("step : " + str(i) + ", loss : " + str(loss))
             writer.add_summary(summ, global_step=i)
 
             if i % save_per_step:
-                saver.save(sess,
-                           '{}/_step_{}'.format(logdir, i))
+                saver.save(sess, '{}/_step_{}'.format(logdir, i))
 
 
 if __name__ == '__main__':
