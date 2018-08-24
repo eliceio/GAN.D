@@ -8,7 +8,6 @@ class AE_Model:
     def __init__(self, latent_dim, batch_size):
         self.latent_dim = latent_dim
         self.batch_size = batch_size
-        self.latent_shape = 128
         self.input_image = tf.placeholder(tf.float32, shape=(self.batch_size, 120, 208, 1))
         self.latent_inputs = tf.placeholder(tf.float32, shape=(self.batch_size, 120, 208, 1))
 
@@ -20,7 +19,7 @@ class AE_Model:
         z_mean = z_mean
         z_log_var = z_log_var
         batch = self.batch_size
-        dim = self.latent_shape
+        dim = self.latent_dim
         epsilon = tf.random_normal(shape=(batch, dim))
         return z_mean + tf.exp(0.5 * z_log_var) * epsilon
 
@@ -41,13 +40,13 @@ class AE_Model:
             enc = tf.layers.flatten(enc)
             enc = tf.layers.dense(enc, 128)
 
-            self.z_mean = tf.layers.dense(enc, self.latent_shape)
-            self.z_log_var = tf.layers.dense(enc, self.latent_shape)
+            self.z_mean = tf.layers.dense(enc, self.latent_dim)
+            self.z_log_var = tf.layers.dense(enc, self.latent_dim)
 
             z = self.sampling(self.z_mean, self.z_log_var)
 
         with tf.variable_scope('Decoder'):
-            self.latent_inputs = tf.placeholder_with_default(z, shape=(None, self.latent_shape))
+            self.latent_inputs = tf.placeholder_with_default(z, shape=(None, self.latent_dim))
             dec = tf.layers.dense(self.latent_inputs, shape[1] * shape[2] * shape[3], activation=tf.nn.relu)
             dec = tf.reshape(dec, [shape[0], shape[1], shape[2], shape[3]])
             dec = tf.layers.dense(dec, 128, activation=tf.nn.relu)  # (batch, 32,32,128)
