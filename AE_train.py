@@ -1,0 +1,56 @@
+from model import AE_Model
+from ops import get_dataset_iterator
+import tensorflow as tf
+
+# hparameter
+latent_dim = 128
+batch_size = 16
+num_step = 1000
+save_per_step = 100
+logdir = './logdir/{}'.format("AE_1")
+
+
+def main():
+    model = AE_Model(latent_dim, batch_size)
+    saver = tf.train.Saver()
+
+    # Loss
+    train_loss = model.loss()
+
+    # Optimizer
+    optimizer = tf.train.RMSPropOptimizer(learning_rate=0.001)
+    train_op = optimizer.minimize(train_loss)
+
+    # Dataset
+    iterator = get_dataset_iterator('./imgs', batch_size)
+    input_image_stacked = iterator.get_next()
+
+    # Summary
+    tf.summary.scalar('AE/loss', train_loss)
+    summ_op = tf.summary.merge_all()
+
+    session_conf = tf.ConfigProto(
+        gpu_options=tf.GPUOptions(
+            allow_growth=True,
+        ),
+    )
+
+    # Training
+    with tf.Session(config=session_conf) as sess:
+        sess.run(tf.global_variables_initializer())
+        sess.run(iterator.initializer)
+        writer = tf.summary.FileWriter(logdir, sess.graph)
+
+        for i in range(num_step):
+            image = sess.run(input_image_stacked)
+            _, summ = sess.run([train_op, summ_op], feed_dict={model.input_image: image})
+            print("step : " + str(i))
+            writer.add_summary(summ, global_step=i)
+
+            if i % save_per_step:
+                saver.save(sess,
+                           '{}/_step_{}'.format(logdir, i))
+
+
+if __name__ == '__main__':
+    main()

@@ -8,9 +8,8 @@ class AE_Model:
     def __init__(self, latent_dim, batch_size):
         self.latent_dim = latent_dim
         self.batch_size = batch_size
-        self.input_shape = [256, 256, 1]  # w * h * c
         self.latent_shape = 128
-        self.input_image = tf.placeholder(tf.float32, shape=(self.batch_size, 256, 256, 1))
+        self.input_image = tf.placeholder(tf.float32, shape=(self.batch_size, 120, 208, 1))
 
         # make network
         self.network = tf.make_template('net', self._network)
@@ -117,11 +116,9 @@ class RNN_Model:
         return loss
 
     def sample_from_output(self, params, output_dim, num_mixes, temp=1.0):
-        """Sample from an MDN output with temperature adjustment."""
 
         # inner methods
         def softmax(w, t=1.0):
-            """Softmax function for a list or numpy array of logits. Also adjusts temperature."""
             e = np.array(w) / t  # adjust temperature
             e -= e.max()  # subtract max to protect from exploding exp values.
             e = np.exp(e)
@@ -129,7 +126,6 @@ class RNN_Model:
             return dist
 
         def sample_from_categorical(dist):
-            """Samples from a categorical model PDF."""
             r = np.random.rand(1)  # uniform random number in [0,1]
             accumulate = 0
             for i in range(0, dist.size):
@@ -161,7 +157,6 @@ class MDN:
         self.logit = self.network(X)
 
     def elu_plus_one_plus_epsilon(self, x):
-        """ELU activation with a very small addition to help prevent NaN in loss."""
         return (tf.nn.elu(x) + 1 + 1e-8)
 
     def _network(self, X):
