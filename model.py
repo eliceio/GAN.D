@@ -9,7 +9,6 @@ class AE_Model:
         self.latent_dim = latent_dim
         self.batch_size = batch_size
         self.input_image = tf.placeholder(tf.float32, shape=(self.batch_size, 120, 208, 1))
-        self.latent_inputs = tf.placeholder(tf.float32, shape=(self.batch_size, 120, 208, 1))
 
         # make network
         self.network = tf.make_template('net', self._network)
