@@ -5,14 +5,15 @@ import tensorflow as tf
 # hparameter
 latent_dim = 128
 batch_size = 16
-num_step = 1000
+num_step = 100
 save_per_step = 100
-logdir = './logdir/{}'.format("AE_1")
+logdir = './logdir/{}'.format("AE_1/")
 
 
 def main():
+    tf.reset_default_graph()
     model = AE_Model(latent_dim, batch_size)
-    saver = tf.train.Saver()
+    saver = tf.train.Saver(tf.trainable_variables())
 
     # Loss
     train_loss = model.loss()
@@ -26,7 +27,7 @@ def main():
     input_image_stacked = iterator.get_next()
 
     # Summary
-    tf.summary.scalar('AE/loss', train_loss)
+    tf.summary.scalar('net/loss', train_loss)
     summ_op = tf.summary.merge_all()
 
     session_conf = tf.ConfigProto(
@@ -49,7 +50,9 @@ def main():
             writer.add_summary(summ, global_step=i)
 
             if i % save_per_step:
-                saver.save(sess, '{}/_step_{}'.format(logdir, i))
+                saver.save(sess, '{}/checkpoint_step_{}'.format(logdir, i))
+
+        writer.close()
 
 
 if __name__ == '__main__':

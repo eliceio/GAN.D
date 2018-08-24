@@ -75,17 +75,9 @@ class AE_Model:
 
     @staticmethod
     def load(sess, logdir):
-        AE_Model._load_variables(sess, logdir, var_list=None)
-
-    @staticmethod
-    def _load_variables(sess, logdir, var_list):
         ckpt = tf.train.latest_checkpoint(logdir)
         if ckpt:
-            tf.train.Saver(var_list=var_list).restore(sess, ckpt)
-            return True
-        else:
-            return False
-
+            tf.train.Saver(tf.trainable_variables()).restore(sess, ckpt)
 
 class RNN_Model:
     def __init__(self):
@@ -98,7 +90,7 @@ class RNN_Model:
 
         # make network
         self.network = tf.make_template('net', self._network)
-        self.y_pred = self._network()
+        self.y_pred = self.network()
 
     def _network(self):
         numComponents = 24
