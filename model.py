@@ -47,8 +47,8 @@ class AE_Model:
             z = self.sampling(self.z_mean, self.z_log_var)
 
         with tf.variable_scope('Decoder'):
-            latent_inputs = tf.placeholder_with_default(z, shape=tf.shape(z))
-            dec = tf.layers.dense(latent_inputs, shape[1] * shape[2] * shape[3], activation=tf.nn.relu)
+            self.latent_inputs = tf.placeholder_with_default(z, shape=(None, self.latent_shape))
+            dec = tf.layers.dense(self.latent_inputs, shape[1] * shape[2] * shape[3], activation=tf.nn.relu)
             dec = tf.reshape(dec, [shape[0], shape[1], shape[2], shape[3]])
             dec = tf.layers.dense(dec, 128, activation=tf.nn.relu)  # (batch, 32,32,128)
             dec = tf.layers.conv2d_transpose(dec, 32, 3, strides=2, activation=tf.nn.relu,
