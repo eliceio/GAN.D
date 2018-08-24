@@ -5,7 +5,8 @@ def _parse_function(filename):
     image_string = tf.read_file(filename)
     image_decoded = tf.image.decode_jpeg(image_string, channels=1)
     image_resized = tf.image.resize_images(image_decoded, [120, 208])
-    return image_resized
+    image_norm = image_resized / 255
+    return image_norm
 
 
 def get_dataset_iterator(dataset_path, batch_size):
