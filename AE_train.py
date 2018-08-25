@@ -5,7 +5,7 @@ import tensorflow as tf
 # hparameter
 latent_dim = 128
 batch_size = 16
-num_step = 100
+num_step = 10000
 save_per_step = 100
 logdir = './logdir/{}'.format("AE_1/")
 

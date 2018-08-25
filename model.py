@@ -12,7 +12,7 @@ class AE_Model:
 
         # make network
         self.network = tf.make_template('net', self._network)
-        self.y_pred = self.network(self.input_image)
+        self.y_pred, self.encoder_pred = self.network(self.input_image)
 
     def sampling(self, z_mean, z_log_var):
         z_mean = z_mean
@@ -23,7 +23,6 @@ class AE_Model:
         return z_mean + tf.exp(0.5 * z_log_var) * epsilon
 
     def _network(self, x):
-
         with tf.variable_scope('Encoder'):
             enc = tf.layers.conv2d(x, 128, kernel_size=3, activation=tf.nn.relu,
                                    padding='same')  # (batch, 25, 256, 128)
@@ -57,7 +56,7 @@ class AE_Model:
                                              padding='same')  # (batch, 256, 256, 128)
             dec = tf.layers.conv2d(dec, filters=1, kernel_size=3, activation=tf.nn.sigmoid,
                                    padding='same')  # (batch, 256, 256, 1)
-        return dec
+        return dec, z
 
     def loss(self):
         reconstruction_loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.layers.flatten(self.input_image),
@@ -78,6 +77,7 @@ class AE_Model:
         ckpt = tf.train.latest_checkpoint(logdir)
         if ckpt:
             tf.train.Saver(tf.trainable_variables()).restore(sess, ckpt)
+
 
 class RNN_Model:
     def __init__(self):
