@@ -31,9 +31,9 @@ def main():
         model.load(sess, logdir=logdir)
 
         image = sess.run(input_image_stacked)
-        output = sess.run([model()], feed_dict={model.input_image: image})
+        output = sess.run(model(), feed_dict={model.input_image: image})
 
-        output = output[0][0]
+        output = output[0]
         image = image[0]
         output *= 255  # restore norm
         image *= 255  # restore norm
