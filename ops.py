@@ -1,5 +1,8 @@
 import tensorflow as tf
 import os
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler
+
 
 def _parse_function(filename):
     image_string = tf.read_file(filename)
@@ -29,3 +32,25 @@ def get_dataset_iterator(dataset_path, batch_size):
     iterator = batched_dataset.make_initializable_iterator()
 
     return iterator
+
+
+# X, y 에 대한 itr 와 scaler도 리턴 나중에 복원 해야하니까
+def get_lv_dataset_iterator(dataset_path, batch_size):
+    data = np.load(dataset_path)
+
+    data = np.array(data).reshape(-1, 128)
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    scaler = scaler.fit(data)
+    data = scaler.transform(data)
+
+    X = data[0:len(data) - 1]
+    Y = data[1:len(data)]
+
+    dataset = tf.data.Dataset.from_tensor_slices((X, Y))
+    dataset = dataset.repeat()
+    dataset = dataset.shuffle(256)
+    batched_dataset = dataset.batch(batch_size)
+
+    iterator = batched_dataset.make_initializable_iterator()
+
+    return iterator, scaler
