@@ -49,7 +49,7 @@ def main():
             print("step : " + str(i) + ", loss : " + str(loss))
             writer.add_summary(summ, global_step=i)
 
-            if i % save_per_step:
+            if i % save_per_step == 0:
                 saver.save(sess, '{}/checkpoint_step_{}'.format(logdir, i))
 
         writer.close()

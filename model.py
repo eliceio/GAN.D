@@ -76,44 +76,44 @@ class AE_Model:
     def load(sess, logdir):
         ckpt = tf.train.latest_checkpoint(logdir)
         if ckpt:
-            tf.train.Saver(tf.trainable_variables()).restore(sess, ckpt)
+            t_vars = tf.trainable_variables()
+            restore_vars = [var for var in t_vars if 'rnn_model' not in var.name]
+            tf.train.Saver(restore_vars).restore(sess, ckpt)
 
 
 class RNN_Model:
-    def __init__(self):
+    def __init__(self, batch_size, numComponents, outputDim):
         # model parameter
-        self.batch = 4
+        self.batch = batch_size
+        self.numComponents = numComponents
+        self.outputDim = outputDim
 
         # model input
         self.input = tf.placeholder(tf.float32, shape=(self.batch, 128))
         self.y_true = tf.placeholder(tf.float32, shape=(self.batch, 128))
 
         # make network
-        self.network = tf.make_template('net', self._network)
+        self.network = tf.make_template('rnn_model', self._network)
         self.y_pred = self.network()
 
     def _network(self):
-        numComponents = 24
-        outputDim = 128
         input = tf.expand_dims(self.input, 1)
         X = LSTM(input, 512, dropout=True, keep_prob=0.4, scope="LSTM_1")
         X = LSTM(X, 512, dropout=True, keep_prob=0.4, scope="LSTM_2")
         X = LSTM(X, 512, dropout=True, keep_prob=0.4, scope="LSTM_3")
         X = tf.reshape(X, [self.batch, -1])
         X = Dense(X, num_unit=1000, activation=tf.nn.relu)
-        outputs = MDN(X, outputDim, numComponents).logit
+        outputs = MDN(X, self.outputDim, self.numComponents).logit
 
         return outputs
 
     def loss(self):
-        num_mixes = 24
-        output_dim = 128
-        out_mu, out_sigma, out_pi = tf.split(self.y_pred, num_or_size_splits=[num_mixes * output_dim,
-                                                                              num_mixes * output_dim,
-                                                                              num_mixes],
+        out_mu, out_sigma, out_pi = tf.split(self.y_pred, num_or_size_splits=[self.numComponents * self.outputDim,
+                                                                              self.numComponents * self.outputDim,
+                                                                              self.numComponents],
                                              axis=1, name='mdn_coef_split')
         cat = Categorical(logits=out_pi)
-        component_splits = [output_dim] * num_mixes
+        component_splits = [self.outputDim] * self.numComponents
         mus = tf.split(out_mu, num_or_size_splits=component_splits, axis=1)
         sigs = tf.split(out_sigma, num_or_size_splits=component_splits, axis=1)
         coll = [MultivariateNormalDiag(loc=loc, scale_diag=scale) for loc, scale
@@ -123,6 +123,14 @@ class RNN_Model:
         loss = tf.negative(loss)
         loss = tf.reduce_mean(loss)
         return loss
+
+    @staticmethod
+    def load(sess, logdir):
+        ckpt = tf.train.latest_checkpoint(logdir)
+        if ckpt:
+            t_vars = tf.trainable_variables()
+            restore_vars = [var for var in t_vars if 'rnn_model/' in var.name]
+            tf.train.Saver(restore_vars).restore(sess, ckpt)
 
     def sample_from_output(self, params, output_dim, num_mixes, temp=1.0):
 
@@ -155,6 +163,9 @@ class RNN_Model:
         sample = np.random.multivariate_normal(mus_vector, cov_matrix, 1)
         return sample
 
+    def __call__(self, *args, **kwargs):
+        return self.y_pred
+
 
 class MDN:
     def __init__(self, X, output_dimension, num_mixtures):
@@ -170,15 +181,18 @@ class MDN:
 
     def _network(self, X):
         with tf.name_scope('MDN'):
-            self.mdn_mus = Dense(X, self.num_mix * self.output_dim)  # mix*output vals, no activation
+            def linear(x):
+                return x
+
+            self.mdn_mus = Dense(X, self.num_mix * self.output_dim, activation=linear)  # mix*output vals, no activation
             self.mdn_sigmas = Dense(X, self.num_mix * self.output_dim,
                                     activation=self.elu_plus_one_plus_epsilon)  # mix*output vals exp activation
-            self.mdn_pi = Dense(X, self.num_mix)  # mix vals, logits
+            self.mdn_pi = Dense(X, self.num_mix, activation=linear)  # mix vals, logits
 
             mdn_out = tf.concat([self.mdn_mus,
                                  self.mdn_sigmas,
                                  self.mdn_pi],
-                                axis=1,
+                                axis=-1,
                                 name='mdn_outputs')
 
             return mdn_out
