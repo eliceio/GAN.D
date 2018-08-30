@@ -3,7 +3,7 @@ GAN.D Team repository
 
 ## Team members:
 
-* 강천성
+* [강천성](https://github.com/kcs93023)
 
 * 김정효
 
