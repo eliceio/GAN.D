@@ -110,7 +110,7 @@ class AE(object):
 
         if config.is_train:
             input_bag = sorted(glob.glob("./Train/*.png"))
-            input_ = [[cv2.imread(input_bag[i])/ 255.0, cv2.imread(input_bag[i+1])/ 255.0] for i in range(0, len(input_bag) - 1)]
+            input_ = [[cv2.imread(input_bag[i])/ 255.0, cv2.imread(input_bag[i+2])/ 255.0] for i in range(0, len(input_bag) -2)]
             label_ = [cv2.imread(path)/ 255.0 for path in input_bag[1:-1]]
         else:
             input_bag = sorted(glob.glob("./Test/*.png"))
@@ -146,7 +146,7 @@ class AE(object):
         else:
             print("Now Start Testing...")
 
-            result = self.pred.eval({self.images: input_})[0]
+            result = self.pred.eval({self.images: input_})[0]*255.0
             imsave(result, config.result_dir+'/result.png', config)
 
 

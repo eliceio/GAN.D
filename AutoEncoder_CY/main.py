@@ -1,12 +1,12 @@
 import tensorflow as tf
-from AE_Dance import AE
+from AE_Dance_256 import AE
 flags = tf.app.flags
 FLAGS = flags.FLAGS
 flags.DEFINE_integer("epoch", 1500, "Number of epoch")
-flags.DEFINE_integer("image_size", 64, "The size of image input")
-flags.DEFINE_integer("label_size", 64, "The size of image output")
+flags.DEFINE_integer("image_size", 256, "The size of image input")
+flags.DEFINE_integer("label_size", 256, "The size of image output")
 flags.DEFINE_integer("c_dim", 3, "The size of channel")
-flags.DEFINE_boolean("is_train", False, "if the train")
+flags.DEFINE_boolean("is_train", True, "if the train")
 flags.DEFINE_string("checkpoint_dir", "checkpoint", "Name of checkpoint directory")
 flags.DEFINE_float("learning_rate", 1e-4 , "The learning rate")
 flags.DEFINE_integer("batch_size", 64, "the size of batch")
