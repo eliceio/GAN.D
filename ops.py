@@ -8,60 +8,59 @@ import cv2
 data_path = './datasets'
 image_list = []
 
+'''
+datasets 디렉토리의 데이터를 메모리로 불러오는 메소드
+시작할때 한번 실행하면 전역변수인 image_list에 저장이 된다.
+이후 get_batch 메소드를 통해 텐서형태로 batch_size 만큼 이미지를 
+추출할 수 있음.
+'''
 def load_data():
     global image_list
+    # 디렉토리 리스트 불러오기
     dir_list = [d for d in os.listdir(data_path) if not d.startswith('.')]
-
-    for dir in dir_list:
-        images = [i for i in os.listdir(join(data_path,dir)) if i.endswith('.png')]
+    # 디렉토리 1개마다 반복문
+    for d in dir_list:
+        # 디렉토리 내의 이미지 불러오기 확장자는 '.png'
+        images = [i for i in os.listdir(join(data_path, d)) if i.endswith('.png')]
         temp_image_list = []
-        alphanum_key = lambda key: int(key.split('_')[2].split('.')[0])
-        images = sorted(images, key=alphanum_key)
-        # print(images)
-        for image in images :
-            temp_image_list.append(cv2.imread(join(data_path,join(dir,image)), flags=0))
+        # 이미지 파일의 이름 규칙에 맞게 순서대로 정렬하기. 이는 운영체제의 파일 시스템에 따라 불러오는 이미지 순서가 다르기 때문에
+        # 디렉토리 상에서 파일이 정렬되어있어도, 불러올때는 다른 순서로 불러오게되는 문제가 생김.
+        images = sorted(images, key = lambda key: int(key.split('_')[2].split('.')[0]))
+        # GrayScale 이미지 읽어오기
+        for image in images:
+            temp_image_list.append(cv2.imread(join(data_path, join(d, image)), flags=0))
+        # 현재 디렉토리의 이미지 리스트를 전체 이미지 리스트에 더하기.
         image_list.append(np.array(temp_image_list))
+
     image_list = np.array(image_list)
-    # print(type(image_list[0]))
 
-
-def get_batch(batch_size, k = 3):
+'''
+batch_size : 우리가 아는 그 batch_size
+k : 30 프레임을 대표하는 조각의 수 Ex) k = 3이면 1, 15, 30 번째 프레임을 뽑는다. 그리고 해당 프레임 사이를 보간한다. 
+'''
+def get_batch(batch_size, k=3):
     input_data = []
     label_data = []
+    # batch_size 만큼 반복에서 이미지 추출
     for _ in range(batch_size):
-        sampled_list = image_list[np.random.choice(len(image_list),size=1)][0]
-        # li = [f for f in os.listdir(join(data_path, str(sampled_list[0]))) if not f.startswith('.')]
-        # print(sampled_list.shape)
+        # 디렉토리를 랜덤으로 선택
+        sampled_list = image_list[np.random.choice(len(image_list), size=1)][0]
         temp_input = []
         while True:
-            idx = np.random.choice(len(sampled_list[0]), size = 1)[0]
-            if idx < len(sampled_list) - 30 :
+            # 30 프레임(1초)을 뽑을 수 있도록 시작 프레임을 선택
+            idx = np.random.choice(len(sampled_list[0]), size=1)[0]
+            if idx < len(sampled_list) - 30:
                 break
-
-        # print(idx)
+        # k 값에 맞게 프레임 추출
         for i in range(k):
-            temp_input.append(sampled_list[idx + (i*(30//k-1))])
-            # temp_input.append(li[idx+15])
-            # temp_input.append(li[idx+30])
-        temp_label = [sampled_list[f] for f in range(idx, idx+30) ]
+            temp_input.append(sampled_list[idx + (i * (30 // k - 1))])
+        # 시작 인덱스로부터 30개 프레임 추출
+        temp_label = [sampled_list[f] for f in range(idx, idx + 30)]
 
         input_data.append(temp_label)
         label_data.append(temp_label)
-        # print(temp_input, end=',')
-        # print(temp_label)
+    # 텐서 형태로 반환
     return tf.convert_to_tensor(np.array(input_data)), tf.convert_to_tensor(np.array(label_data))
-
-# 'load_data' & 'get_batch' 테스트 코드 나중에 삭제 예정.
-# 일단 전역변수 image_list에다 데이터를 읽어서 ndarray 형태로 저장.
-# 그런 다음 get_batch 코드에서 임의로 디렉토리 선택하고 k(interval 이미지 수)에 맞게 알아서 데이터를 가져옴
-# tensor 형태로 return 하는데 일단 이렇게 해두고 저장된거 자체를 ndarray가 아니라 Tensor 형태로 해보도록
-# 수정할 예정 여전히 리펙토링은 추후에
-# load_data()
-# input, label = get_batch(batch_size=5)
-# print(type(input))
-# print(type(label))
-
-
 
 
 def _parse_function(filename):
