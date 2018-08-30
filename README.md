@@ -11,7 +11,7 @@ GAN.D Team repository
 
 * 신창엽
 
-* 임진수
+* [임진수](https://github.com/Jinsu-L)
 
 * 조혜민
 
