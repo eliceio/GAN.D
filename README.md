@@ -13,7 +13,7 @@ GAN.D Team repository
 
 * [임진수](https://github.com/Jinsu-L)
 
-* 조혜민
+* [조혜민](https://github.com/pkh091)
 
 T.A.: 이기훈
 
