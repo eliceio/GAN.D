@@ -4,9 +4,10 @@ import os
 import numpy as np
 import cv2
 from model import AE_Model
-from ops import image_list
+import ops
 
 def main():
+    image_list = ops.image_list
     lv_array = []
     latent_dim = 128
     batch_size = 1
@@ -15,7 +16,7 @@ def main():
 
     # make images flat
     imgs = []
-    for i in len(image_list):
+    for i in range(len(image_list)):
         for img in image_list[i] :
             imgs.append(img)
     # imgs = np.array(imgs)
@@ -36,4 +37,5 @@ def main():
 
 
 if __name__ == '__main__':
+    ops.load_data()
     main()
