@@ -11,7 +11,7 @@ def main():
     lv_array = []
     latent_dim = 128
     batch_size = 1
-    logdir = './logdir/{}'.format("AE_1/")
+    logdir = './logdir/{}'.format("AE_silhouette/")
     model = AE_Model(latent_dim, batch_size)
 
     # make images flat
@@ -20,6 +20,7 @@ def main():
         for img in image_list[i] :
             imgs.append(img)
     # imgs = np.array(imgs)
+
     with tf.Session() as sess:
         model.load(sess, logdir=logdir)
         for img in imgs:

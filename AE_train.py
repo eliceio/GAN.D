@@ -4,10 +4,10 @@ import tensorflow as tf
 
 # hparameter
 latent_dim = 128
-batch_size = 16
-num_step = 10000
-save_per_step = 100
-logdir = './logdir/{}'.format("AE_1/")
+batch_size = 64
+num_step = 100000
+save_per_step = 1000
+logdir = './logdir/{}'.format("AE_silhouette/")
 
 
 def main():

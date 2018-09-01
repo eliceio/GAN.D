@@ -25,7 +25,7 @@ class AE_Model:
     def _network(self, x):
         with tf.variable_scope('Encoder'):
             enc = tf.layers.conv2d(x, 128, kernel_size=3, activation=tf.nn.relu,
-                                   padding='same')  # (batch, 25, 256, 128)
+                                   padding='same')  # (batch, 256, 256, 128)
             enc = tf.layers.max_pooling2d(enc, pool_size=2, strides=2)  # (batch, 128, 128, 128)
             enc = tf.layers.conv2d(enc, 64, kernel_size=3, activation=tf.nn.relu,
                                    padding='same')  # (batch, 128, 128, 64)
@@ -61,7 +61,7 @@ class AE_Model:
     def loss(self):
         reconstruction_loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.layers.flatten(self.input_image),
                                                                       logits=tf.layers.flatten(self.y_pred))
-        reconstruction_loss *= 120 * 208
+        reconstruction_loss *= 256 * 256
         kl_loss = 1 + self.z_log_var - tf.square(self.z_mean) - tf.exp(self.z_log_var)
         kl_loss = tf.reduce_sum(kl_loss, axis=-1)
         kl_loss *= -0.5

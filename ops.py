@@ -66,7 +66,7 @@ def get_batch(batch_size, k=3):
 def _parse_function(filename):
     image_string = tf.read_file(filename)
     image_decoded = tf.image.decode_jpeg(image_string, channels=1)
-    image_resized = tf.image.resize_images(image_decoded, [120, 208])
+    image_resized = tf.image.resize_images(image_decoded, [256, 256])
     image_norm = image_resized / 255
     return image_norm
 
@@ -76,7 +76,7 @@ def get_dataset_iterator(dataset_path, batch_size):
     imagepaths = list()
 
     for d in data[2]:
-        if d.endswith('.jpg') or d.endswith('.jpeg'):
+        if d.endswith('.jpg') or d.endswith('.jpeg') or d.endswith('.png'):
             imagepaths.append(os.path.join(dataset_path, d))
 
     imagepaths = tf.convert_to_tensor(imagepaths, dtype=tf.string)
