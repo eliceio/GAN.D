@@ -6,7 +6,7 @@ import cv2
 # hparameter
 latent_dim = 128
 batch_size = 1
-logdir = './logdir/{}'.format("AE_silhouette/")
+logdir = './logdir/{}'.format("AE_3_fine/")
 
 
 def main():

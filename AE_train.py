@@ -4,10 +4,10 @@ import tensorflow as tf
 
 # hparameter
 latent_dim = 128
-batch_size = 64
-num_step = 100000
-save_per_step = 1000
-logdir = './logdir/{}'.format("AE_silhouette/")
+batch_size = 16
+num_step = 9000
+save_per_step = 300
+logdir = './logdir/{}'.format("AE_3_fine/")
 
 
 def main():
@@ -19,7 +19,7 @@ def main():
     train_loss = model.loss()
 
     # Optimizer
-    optimizer = tf.train.RMSPropOptimizer(learning_rate=0.001)
+    optimizer = tf.train.AdamOptimizer(learning_rate=3e-4)
     train_op = optimizer.minimize(train_loss)
 
     # Dataset
