@@ -17,39 +17,47 @@ GAN.D Team repository - 나만의 댄서 만들기
 
 T.A.: 이기훈
 
-## Project Architecture
+## Project Architecture:
 
-* Overview
+  * Overview
 
-* VAE
+  ![model](./asset/overview.png)
 
-* Bi-LSTM + Mixture Density Networks
+  * VAE
 
-* [pix2pix](https://affinelayer.com/pixsrv/)
+  * Bi-LSTM + Mixture Density Networks
 
-* [CMU-openpose](https://github.com/CMU-Perceptual-Computing-Lab/openpose)
+  * [pix2pix](https://affinelayer.com/pixsrv/)
 
-## Requirements
+  * [CMU-openpose](https://github.com/CMU-Perceptual-Computing-Lab/openpose)
+
+## Requirements:
 
 * tensorflow
 * opencv-python
 * numpy
 * scikit-learn
 
-## How to run project
-1. collect continuous dance images & generate skeleton(CMU openpose)
-2. train VAE - run AE_train.py
-3. create encoded dataset - run generate_encoded_vec.py
-4. train rnn model - run dancegen.py
-5. train pix2pix model - run pix2pix.py
+## How to run project:
+  1. collect continuous dance images & generate skeleton(CMU openpose)
+  2. train VAE - run AE_train.py
+  3. create encoded dataset - run generate_encoded_vec.py
+  4. train rnn model - run dancegen.py
+  5. train pix2pix model - run pix2pix.py
 
-## Project Result
+## Project Result:
  
  * [Demo Video](https://www.youtube.com/watch?v=9FTgGdgzsBI&feature=youtu.be) 
 
- * gif
+ * model result:
+ 
+   ![model](./asset/result.gif)
 
- * other test
+ * other test:
+ 
+   ![model](./asset/elice_word.png)
+ 
+   ![model](./asset/octopus.png)
 
 ## Project Poster
 
