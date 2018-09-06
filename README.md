@@ -21,7 +21,7 @@ T.A.: 이기훈
 
   * Overview
 
-  ![model](./asset/overview.png)
+     ![model](./asset/overview.png)
 
   * VAE
 
